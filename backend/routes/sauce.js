@@ -19,7 +19,7 @@ router.get('/:id', auth, sauceCtrl.getOneSauce);
 router.get('/', auth, sauceCtrl.getAllSauces);
 
 //on définie l'adresse de like pas like
-//router.post('/:id/like', auth, sauceCtrl.addReviewSauce);
+router.post('/:id/like', /*auth, */sauceCtrl.addReviewSauce);
 
 
 module.exports = router;

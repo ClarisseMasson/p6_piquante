@@ -42,9 +42,9 @@ exports.deleteSauce = (req, res, next) => {
         .then(sauce => {
             //...on recupère le nom du fichier par rapport à l'url image créée, soit ce qui se trouve après /images/
             const filename = sauce.imageUrl.split('/images/')[1];
-            //...on supprime le fichier puis
+            //...on supprime le fichier du dossier images
             fs.unlink(`images/${filename}`, () => {
-                //puis deleteOne pour supprimer l'objet de la base
+                //puis deleteOne pour supprimer aussi l'objet de la base de la donnée
                 Sauce.deleteOne({ _id: req.params.id })
                     .then(() => res.status(200).json({ message: 'Objet supprimé !' }))
                     .catch(error => res.status(404).json({ error }));
@@ -69,57 +69,62 @@ exports.getAllSauces = (req, res, next) => {
 
 };
 
-////on ajoute un avis à la sauce
-//exports.addReviewSauce = (req, res, next) => {
-//    //il faut d'abord que j'initialise les like et dislike à 0 et les tableaux [] dans le post de la sauce (pour la modification A VOIR)
-//    console.log(req.params.id);
-//    //si le nombre est inférieur à 0 on veut unliker et on ajoute l'id de l'utilisateur dans le tableau dislike
-//    //on vérifie dans le tableau dislike si l'id de l'utilisateur est déja existant, si il l'ai on ne l'ajoute pas 
-//    //on vérifie dans le tableau like si l'id de l'utilisateur est déja existant, si il l'ai on le supprime
-//    Sauce.findOne({ _id: req.params.id })
-//        .then(sauce => {
-//            console.log(req.body);
-//            var review = { ...req.body };
+//on ajoute un avis à la sauce
+exports.addReviewSauce = (req, res, next) => {
+    //Attention, il faut d'abord que j'initialise les like et dislike à 0 et les tableaux [] dans le post de la sauce (pour la modification A VOIR)
+    //on recherche la sauce selon son id
+    Sauce.findOne({ _id: req.params.id })
+        .then(sauce => {
+            var review = { ...req.body };
+            //si le client clique sur le pouce levé et que le message renvoyé de like est 1 alors...
+            if (review.like == 1) {
+                //...on ajoute au tableau usersLiked l'id du client
+                sauce.usersLiked.push(review.userId);
+                //...après l'ajout, on récupère le nombre de personnes ayant "liké" la sauce
+                sauce.likes = sauce.usersLiked.length;
+                //...on met à jout la sauce
+                Sauce.updateOne({ _id: req.params.id }, sauce)
+                    .then(() => res.status(200).json({ message: 'Votre avis positif a bien été pris en compte !' }))
+                    .catch(error => res.status(404).json({ error }));
+            }
+            //si le client clique sur le pouce baissé et que le message renvoyé de like est -1 alors...
+            else if (review.like == -1) {
+                //...on ajoute au tableau usersDisliked l'id du client
+                sauce.usersDisliked.push(review.userId);
+                //...après l'ajout, on récupère le nombre de personnes ayant "disliké" la sauce
+                sauce.dislikes = sauce.usersDisliked.length;
+                //...on met à jout la sauce
+                Sauce.updateOne({ _id: req.params.id }, sauce)
+                    .then(() => res.status(200).json({ message: 'Votre avis négatif a bien été pris en compte !' }))
+                    .catch(error => res.status(404).json({ error }));
+            }
+            //si le client reclique sur son avis et que le message renvoyé de like est 0 alors...
+            else {
+                //...on va chercher si l'id de l'utilisateur est présent dans les tableaux usersLiked et usersDislikes et surtout son index dans le tableau, puis nommer cette index
+                const reviewIdLike = sauce.usersLiked.indexOf(review.userId);
+                const reviewIdDislike = sauce.usersDisliked.indexOf(review.userId);
+                //si il y l'identifiant de l'utilisteur correspond à un identifiant de notre tableau userLikes alors...
+                if (sauce.usersLiked.includes(review.userId)) {
+                    //...on l'enlève du tableau usersLiked en utilisant l'index préalablement calculé et on s'arrête d'enlever des éléments juste après
+                    sauce.usersLiked.splice(reviewIdLike, 1);
+                }
+                //si il y l'identitfiant de l'utilisateur correspond à un identifiant de notre tableau userDislikes alors...
+                else if (sauce.usersDisliked.includes(review.userId)) {
+                    //...on l'enlève du tableau usersDisiked en utilisant l'index préalablement calculé et on s'arrête d'enlever des éléments juste après
+                    sauce.usersDisliked.splice(reviewIdDislike, 1);
+                }
+                else {
+                    console.log(err);
+                }
+                //...on recalcule le nombre de personnes ayant disliké et liké, puis on met à jour la sauce
+                sauce.likes = sauce.usersLiked.length;
+                sauce.dislikes = sauce.usersDisliked.length;
+                Sauce.updateOne({ _id: req.params.id }, sauce)
+                    .then(() => res.status(200).json({ message: 'Retour à 0 !' }))
+                    .catch(error => res.status(404).json({ error }));
+            }
+         
+        })
+        .catch(error => res.status(404).json({ error}));
 
-//            console.log("message");
-//            //si le nombre est égale à 0 et donc que l'utilisateur à cliqué sur avis positif et négatif alors...
-//            if (review.like === 0) {
-//                console.log('1');
-//                 //on enlève son userId dans le tableau usersLiked
-//                const index = sauce.usersLiked.find((sauce, index) => {
-//                    if (review.userId === sauce) {
-//                        return index;
-//                    }
-//                });
-//                sauce.userLiked.splice(index, 1);
-//                sauce.likes -= 1;
-//                //on enlève son userId aussi dans le tableau usersDisliked
-//                const indexDisliked = sauce.usersDisliked.find((sauce, indexDisliked) => {
-//                    if (review.userId === sauce) {
-//                        return indexDisliked;
-//                    }
-//                });
-//                sauce.userDisliked.splice(indexDisliked, 1);
-//                sauce.dislikes -= -1;
-//                Sauce.updateOne({ _id: req.params.id }, sauce )
-//                    .then(() => res.status(200).json({ message: 'Avis retourne à neutre!' }))
-//                    .catch(error => res.status(500).json({ error }));
-//            } else if (review.like === -1) {
-//                console.log('2');
-//                sauce.dislikes += 1;
-//                sauce.usersDisliked.push(review.userId);
-//                Sauce.updateOne({ _id: req.params.id }, sauce)
-//                    .then(() => res.status(200).json({ message: 'Votre avis négatif a bien été pris en compte !' }))
-//                    .catch(error => res.status(404).json({ error }));
-//            } else {
-//                console.log('3');
-//                sauce.likes += 1;
-//                sauce.usersLiked.push(review.userId);
-//                Sauce.updateOne({ _id: req.params.id }, sauce)
-//                    .then(() => res.status(200).json({ message: 'Votre avis positif a bien été pris en compte !' }))
-//                    .catch(error => res.status(404).json({ error }));
-//            }
-//        })
-//        .catch(error => res.status(404).json({ error, message: 'erreur ici' }));
-
-//};
+};

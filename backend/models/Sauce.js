@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+//on définie ce que contient notre modèle de sauce en utilisant la propriété schéma de mongoose
 const sauceSchema = mongoose.Schema({
     userId: { type: String, required: true },
     name: { type: String, required: true },
