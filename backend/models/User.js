@@ -1,13 +1,16 @@
 const mongoose = require('mongoose');
 
-//installer le package en ligne de commande npm install --save mongoose-unique-validator
+//installer le package en ligne de commande
+//npm install--save mongoose - unique - validator
 //puis rajouter le plug-in dans notre code
 const uniqueValidator = require('mongoose-unique-validator');
 
-//"unique: true" pour que une seule personne puisse s'inscrire avec cet email (cependant cela bug defois avec mongoose, on rajoute alors un plugin voir plus haut)
+//"unique: true" pour que une seule personne puisse s'inscrire avec cet email
+//(cependant cela bug defois avec mongoose, on rajoute alors un plugin)
 const userSchema = mongoose.Schema({
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true }
+    password: { type: String, required: true },
+    loginAttempt: { type : Number, required : true}
 });
 
 //on applique le validator avant d'en faire un model
